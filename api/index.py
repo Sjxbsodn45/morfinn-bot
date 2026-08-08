@@ -5,7 +5,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 TOKEN = os.environ["BOT_TOKEN"]
 CHANNEL = "@Morfinn051"
 
-app = Application.builder().token(TOKEN).build()
+application = Application.builder().token(TOKEN).build()
 
 
 async def check_membership(user_id, context):
@@ -26,18 +26,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "📢 عضویت در کانال",
-                url="https://t.me/Morfinn051"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "✅ عضو شدم",
-                callback_data="check"
-            )
-        ]
+        [InlineKeyboardButton(
+            "📢 عضویت در کانال",
+            url="https://t.me/Morfinn051"
+        )],
+        [InlineKeyboardButton(
+            "✅ عضو شدم",
+            callback_data="check"
+        )]
     ]
 
     await update.message.reply_text(
@@ -61,8 +57,10 @@ async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(check, pattern="^check$"))
+application.add_handler(CommandHandler("start", start))
+application.add_handler(
+    CallbackQueryHandler(check, pattern="^check$")
+)
 
 
 async def handler(request):
@@ -70,12 +68,13 @@ async def handler(request):
 
     update = Update.de_json(
         data=data,
-        bot=app.bot
+        bot=application.bot
     )
 
-    await app.initialize()
-    await app.process_update(update)
-    await app.shutdown()
+    if not application.running:
+        await application.initialize()
+
+    await application.process_update(update)
 
     return {
         "statusCode": 200,
