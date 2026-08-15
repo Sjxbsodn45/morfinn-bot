@@ -6,8 +6,8 @@ from starlette.requests import Request
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 
-TOKEN = os.environ["BOT_TOKEN"]
-CHANNEL = "@Morfinn051"
+TOKEN = os.environ.get("BOT_TOKEN")
+CHANNEL = os.environ.get("CHANNEL_USERNAME", "@Morfinn051")
 
 tg_app = Application.builder().token(TOKEN).build()
 
@@ -19,9 +19,7 @@ async def check_membership(user_id, context):
         return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-
-    if await check_membership(user_id, context):
+    if await check_membership(update.effective_user.id, context):
         await update.message.reply_text("✅ خوش اومدی! بات برای شما فعاله.")
         return
 
@@ -34,6 +32,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "برای استفاده از بات، ابتدا در کانال عضو شو 👇",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
+async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if await check_membership(query.from_user.id, context):
+        await query.edit_message_text("✅ عضویت تأیید شد! بات برای شما فعال شد.")
+    else:
+        await query.answer("❌ هنوز عضو کانال نیستی.", show_alert=True)
+
+tg_app.add_handler(CommandHandler("start", start))
+tg_app.add_handler(CallbackQueryHandler(check, pattern="^check$"))
+
+async def webhook(request: Request):
+    data = await request.json()
+    if not tg_app.running:
+        await tg_app.initialize()
+    update = Update.de_json(data, tg_app.bot)
+    await tg_app.process_update(update)
+    return PlainTextResponse("OK")
+
+app = Starlette(routes=[
+    Route("/", webhook, methods=["POST"]),
+    Route("/", lambda request: PlainTextResponse("Bot is running"), methods=["GET"])
+])
 
 async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
