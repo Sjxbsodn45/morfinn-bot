@@ -82,8 +82,7 @@ async def webhook(request: Request):
     return PlainTextResponse("OK")
 
 app = Starlette(routes=[
-    Route("/api", webhook, methods=["POST"]),
-    Route("/", lambda request: PlainTextResponse("Bot is running"), methods=["GET"])
+    Route("/", webhook, methods=["GET", "POST"])
 ])
 
     update = Update.de_json(
